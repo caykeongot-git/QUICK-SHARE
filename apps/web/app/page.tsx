@@ -4,12 +4,11 @@ import * as React from 'react';
 import { CommandPalette } from '@/components/CommandPalette';
 import { DropZone } from '@/components/DropZone';
 import { TransferStatus } from '@/components/TransferStatus';
+import { ReceivedDataInbox, createTextItem, createFileItem, type ReceivedItem } from '@/components/ReceivedDataInbox';
 import { useWebRTC } from '@/lib/hooks/useWebRTC';
-import { isLikelyCode, highlightCodeSnippet } from '@/lib/language-detect';
 import { toast } from 'sonner';
 
 // Determine the signaling URL based on the environment
-// Using the local Wrangler dev server for now. In prod, this would be env injected.
 const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL || 'ws://127.0.0.1:8787';
 
 export default function Home() {
@@ -18,19 +17,20 @@ export default function Home() {
     baseUrl: typeof window !== 'undefined' ? window.location.origin : '',
   });
 
+  // Inbox state — persistent received items
+  const [receivedItems, setReceivedItems] = React.useState<ReceivedItem[]>([]);
+
   // Handle URL hash on mount (Receiver joining a room)
   React.useEffect(() => {
     const handleHash = async () => {
-      // Use URL parameters for room to avoid chat apps stripping the entire hash
       const params = new URLSearchParams(window.location.search);
       const roomId = params.get('room');
-      const keyHash = window.location.hash.substring(1); // remove '#'
+      const keyHash = window.location.hash.substring(1);
       
       if (roomId && keyHash) {
         try {
           await webrtc.joinRoom(roomId, keyHash);
           toast.success(`Joining secure room: ${roomId}...`);
-          // Clear URL to avoid re-joining on refresh
           window.history.replaceState(null, '', window.location.pathname);
         } catch (err) {
           toast.error("Failed to join room. Invalid link or key.");
@@ -38,88 +38,39 @@ export default function Home() {
       }
     };
     handleHash();
-    // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle received text and files
+  // Handle received text → add to Inbox (NOT toast)
   React.useEffect(() => {
     if (webrtc.receivedText) {
-      const isCode = isLikelyCode(webrtc.receivedText);
-      
-      if (isCode) {
-        const { html, language } = highlightCodeSnippet(webrtc.receivedText);
-        toast(`Received Code (${language})`, {
-          description: (
-            <div 
-              className="mt-2 p-3 bg-background/50 border border-border/40 rounded-md overflow-x-auto max-h-[300px] text-xs font-mono"
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          ),
-          action: {
-            label: "Copy Code",
-            onClick: () => {
-              navigator.clipboard.writeText(webrtc.receivedText || "");
-              toast.success("Copied to clipboard!");
-            }
-          },
-          duration: Number.POSITIVE_INFINITY, // Show forever until user acts
-        });
-      } else {
-        toast("Received Text", {
-          description: (
-            <div className="mt-2 p-3 bg-background/50 border border-border/40 rounded-md overflow-y-auto max-h-[300px] text-sm whitespace-pre-wrap break-words">
-              {webrtc.receivedText}
-            </div>
-          ),
-          action: {
-            label: "Copy Text",
-            onClick: () => {
-              navigator.clipboard.writeText(webrtc.receivedText || "");
-              toast.success("Copied to clipboard!");
-            }
-          },
-          duration: Number.POSITIVE_INFINITY, // Show forever until user acts
-        });
-      }
+      const item = createTextItem(webrtc.receivedText);
+      setReceivedItems(prev => [item, ...prev]);
+      toast.success('New data received!', { duration: 3000 });
     }
+  }, [webrtc.receivedText]);
 
+  // Handle received file → add to Inbox (NOT toast)
+  React.useEffect(() => {
     if (webrtc.receivedFile) {
       const { blob, metadata } = webrtc.receivedFile;
-      const url = URL.createObjectURL(blob);
-      const isImage = metadata.fileType.startsWith('image/');
-      
-      toast(`Received File: ${metadata.fileName}`, {
-        description: (
-          <div className="flex flex-col gap-3 mt-2">
-            {isImage && (
-              <img 
-                src={url} 
-                alt="Preview" 
-                className="w-full max-h-[200px] object-contain rounded-md border border-border/50 bg-black/5" 
-              />
-            )}
-            <div className="text-xs text-muted-foreground flex justify-between">
-              <span>{metadata.fileType || 'Unknown format'}</span>
-              <span>{(metadata.fileSize / 1024 / 1024).toFixed(2)} MB</span>
-            </div>
-            <a 
-              href={url} 
-              download={metadata.fileName}
-              className="bg-primary text-primary-foreground text-center text-sm font-medium py-2 rounded-lg hover:bg-primary/90 transition-colors block shadow-sm"
-              onClick={() => {
-                // Auto dismiss toast after download click
-                toast.dismiss();
-              }}
-            >
-              Download File
-            </a>
-          </div>
-        ),
-        duration: Number.POSITIVE_INFINITY, // Never auto-dismiss file downloads
-      });
+      const item = createFileItem(blob, metadata);
+      setReceivedItems(prev => [item, ...prev]);
+      toast.success(`File received: ${metadata.fileName}`, { duration: 3000 });
     }
-  }, [webrtc.receivedText, webrtc.receivedFile]);
+  }, [webrtc.receivedFile]);
+
+  const handleDismissItem = (id: string) => {
+    setReceivedItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleClearAll = () => {
+    // Revoke object URLs to free memory
+    receivedItems.forEach(item => {
+      if (item.objectUrl) URL.revokeObjectURL(item.objectUrl);
+    });
+    setReceivedItems([]);
+  };
 
   // Handle file drop
   const handleFileDrop = async (file: File) => {
@@ -154,6 +105,12 @@ export default function Home() {
           progress={webrtc.progress} 
           status={webrtc.status} 
           shareUrl={webrtc.shareUrl} 
+        />
+
+        <ReceivedDataInbox
+          items={receivedItems}
+          onDismiss={handleDismissItem}
+          onClearAll={handleClearAll}
         />
         
         <div className="absolute bottom-8 left-0 w-full text-center opacity-50 pointer-events-none">

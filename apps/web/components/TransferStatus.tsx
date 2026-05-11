@@ -71,38 +71,38 @@ export function TransferStatus({ progress, status, shareUrl }: TransferStatusPro
               </div>
 
               {/* Manual Join Code */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                <div className="bg-background/40 border border-border/40 p-3 rounded-xl flex flex-col gap-1 text-left min-w-0 relative group">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Room ID</span>
-                  <div className="flex items-center gap-2 w-full min-w-0">
-                    <span className="font-mono text-sm font-medium truncate flex-1">{roomId}</span>
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(roomId);
-                        toast.success("Room ID copied!");
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-foreground flex-shrink-0"
-                      title="Copy Room ID"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
+              <div className="flex flex-col gap-3 mt-2">
+                <div className="bg-background/40 border border-border/40 p-3 rounded-xl flex items-center justify-between gap-2 group">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Room ID</span>
+                    <span className="font-mono text-sm font-medium">{roomId}</span>
                   </div>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(roomId);
+                      toast.success("Room ID copied!");
+                    }}
+                    className="p-2 hover:bg-muted rounded-lg transition-all text-muted-foreground hover:text-foreground flex-shrink-0"
+                    title="Copy Room ID"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
                 </div>
-                <div className="bg-background/40 border border-border/40 p-3 rounded-xl flex flex-col gap-1 text-left min-w-0 relative group">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Secret Key</span>
-                  <div className="flex items-center gap-2 w-full min-w-0">
-                    <span className="font-mono text-sm font-medium truncate flex-1" title={keyString}>{keyString}</span>
+                <div className="bg-background/40 border border-border/40 p-3 rounded-xl flex flex-col gap-1.5 group">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Secret Key</span>
                     <button 
                       onClick={() => {
                         navigator.clipboard.writeText(keyString);
                         toast.success("Secret Key copied!");
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-foreground flex-shrink-0"
+                      className="p-2 hover:bg-muted rounded-lg transition-all text-muted-foreground hover:text-foreground flex-shrink-0"
                       title="Copy Secret Key"
                     >
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-4 h-4" />
                     </button>
                   </div>
+                  <span className="font-mono text-xs font-medium break-all leading-relaxed select-all">{keyString}</span>
                 </div>
               </div>
             </div>
