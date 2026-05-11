@@ -31,8 +31,8 @@ export function TransferStatus({ progress, status, shareUrl }: TransferStatusPro
     } catch {}
 
     return (
-      <div className="w-full max-w-2xl mx-auto mt-6 glass-panel rounded-3xl p-6 md:p-8 animate-in fade-in slide-in-from-bottom-4 shadow-xl border border-border/50">
-        <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+      <div className="w-full max-w-2xl mx-auto mt-6 glass-panel rounded-3xl p-6 md:p-8 animate-in fade-in slide-in-from-bottom-4 shadow-xl border border-border/50 overflow-hidden">
+        <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
           
           {/* QR Code Section */}
           <div className="flex flex-col items-center gap-3 bg-white p-4 rounded-2xl shadow-sm">
@@ -51,7 +51,7 @@ export function TransferStatus({ progress, status, shareUrl }: TransferStatusPro
           </div>
 
           {/* Details Section */}
-          <div className="flex-1 flex flex-col w-full text-center md:text-left">
+          <div className="flex-1 flex flex-col w-full min-w-0 text-center md:text-left">
             <h3 className="text-xl font-bold mb-2 text-foreground">Room Created</h3>
             <p className="text-sm text-muted-foreground mb-6">
               Scan the QR code with your phone camera, or share the secure link below.
