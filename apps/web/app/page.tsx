@@ -21,15 +21,19 @@ export default function Home() {
   // Handle URL hash on mount (Receiver joining a room)
   React.useEffect(() => {
     const handleHash = async () => {
-      const hash = window.location.hash;
-      const pathParts = window.location.pathname.split('/');
+      const hash = window.location.hash.substring(1); // remove '#'
       
-      // Expected URL format: /room/roomId#keyHash
-      if (pathParts[1] === 'room' && pathParts[2] && hash) {
-        const roomId = pathParts[2];
+      // Expected URL format: #room=roomId&key=keyHash
+      const params = new URLSearchParams(hash);
+      const roomId = params.get('room');
+      const keyHash = params.get('key');
+      
+      if (roomId && keyHash) {
         try {
-          await webrtc.joinRoom(roomId, hash);
+          await webrtc.joinRoom(roomId, keyHash);
           toast.success(`Joining secure room: ${roomId}...`);
+          // Clear hash to avoid re-joining on refresh
+          window.history.replaceState(null, '', window.location.pathname);
         } catch (err) {
           toast.error("Failed to join room. Invalid link or key.");
         }

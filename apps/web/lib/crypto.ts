@@ -177,12 +177,13 @@ export async function decryptText(
 // ─────────────────────────────────────────────────
 
 /**
- * Build a shareable URL with the encryption key embedded in the URI fragment.
+ * Build a shareable URL with the room ID and encryption key embedded in the URI fragment.
  *
- * Example output: https://quickshare.app/room/abc123#SGVsbG8gV29ybGQ
+ * Example output: https://quickshare.app/#room=abc123&key=SGVsbG8gV29ybGQ
  *
  * The fragment (#...) is NEVER sent to the server per HTTP specification.
- * This is the cornerstone of our Zero-Trust E2EE architecture.
+ * This ensures the server knows absolutely nothing about the room being joined
+ * or the key being used.
  *
  * @param baseUrl - Base URL of the application
  * @param roomId - Room identifier
@@ -194,27 +195,20 @@ export async function buildShareURL(
   key: CryptoKey
 ): Promise<string> {
   const keyString = await exportKeyToBase64URL(key);
-  // Remove trailing slash from baseUrl
   const cleanBase = baseUrl.replace(/\/+$/, '');
-  return `${cleanBase}/room/${roomId}#${keyString}`;
+  return `${cleanBase}/#room=${roomId}&key=${keyString}`;
 }
 
 /**
- * Extract and import the encryption key from a URI fragment (hash).
+ * Extract the encryption key from a URI fragment string.
+ * Expects format: room=abc&key=def
  *
- * @param hash - window.location.hash (including the # prefix)
+ * @param hashString - The key hash string
  * @returns CryptoKey ready for decryption
- * @throws Error if hash is empty or invalid
+ * @throws Error if key is invalid
  */
-export async function extractKeyFromHash(hash: string): Promise<CryptoKey> {
-  // Remove the leading # character
-  const keyString = hash.startsWith('#') ? hash.slice(1) : hash;
-
-  if (!keyString) {
-    throw new Error('No encryption key found in URL fragment.');
-  }
-
-  return importKeyFromBase64URL(keyString);
+export async function extractKeyFromHash(hashString: string): Promise<CryptoKey> {
+  return importKeyFromBase64URL(hashString);
 }
 
 // ─────────────────────────────────────────────────
