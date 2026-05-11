@@ -52,23 +52,34 @@ export default function Home() {
         toast(`Received Code (${language})`, {
           description: (
             <div 
-              className="mt-2 p-2 bg-background/50 rounded-md overflow-x-auto max-h-[300px] text-xs font-mono"
+              className="mt-2 p-3 bg-background/50 border border-border/40 rounded-md overflow-x-auto max-h-[300px] text-xs font-mono"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           ),
           action: {
-            label: "Copy",
-            onClick: () => navigator.clipboard.writeText(webrtc.receivedText || "")
+            label: "Copy Code",
+            onClick: () => {
+              navigator.clipboard.writeText(webrtc.receivedText || "");
+              toast.success("Copied to clipboard!");
+            }
           },
-          duration: 10000, // Show longer for code
+          duration: Number.POSITIVE_INFINITY, // Show forever until user acts
         });
       } else {
         toast("Received Text", {
-          description: webrtc.receivedText,
+          description: (
+            <div className="mt-2 p-3 bg-background/50 border border-border/40 rounded-md overflow-y-auto max-h-[300px] text-sm whitespace-pre-wrap break-words">
+              {webrtc.receivedText}
+            </div>
+          ),
           action: {
-            label: "Copy",
-            onClick: () => navigator.clipboard.writeText(webrtc.receivedText || "")
-          }
+            label: "Copy Text",
+            onClick: () => {
+              navigator.clipboard.writeText(webrtc.receivedText || "");
+              toast.success("Copied to clipboard!");
+            }
+          },
+          duration: Number.POSITIVE_INFINITY, // Show forever until user acts
         });
       }
     }

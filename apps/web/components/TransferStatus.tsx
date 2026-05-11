@@ -74,14 +74,14 @@ export function TransferStatus({ progress, status, shareUrl }: TransferStatusPro
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                 <div className="bg-background/40 border border-border/40 p-3 rounded-xl flex flex-col gap-1 text-left min-w-0 relative group">
                   <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Room ID</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-medium truncate">{roomId}</span>
+                  <div className="flex items-center gap-2 w-full min-w-0">
+                    <span className="font-mono text-sm font-medium truncate flex-1">{roomId}</span>
                     <button 
                       onClick={() => {
                         navigator.clipboard.writeText(roomId);
                         toast.success("Room ID copied!");
                       }}
-                      className="ml-auto opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-foreground flex-shrink-0"
+                      className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-foreground flex-shrink-0"
                       title="Copy Room ID"
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -90,14 +90,14 @@ export function TransferStatus({ progress, status, shareUrl }: TransferStatusPro
                 </div>
                 <div className="bg-background/40 border border-border/40 p-3 rounded-xl flex flex-col gap-1 text-left min-w-0 relative group">
                   <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Secret Key</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full min-w-0">
                     <span className="font-mono text-sm font-medium truncate flex-1" title={keyString}>{keyString}</span>
                     <button 
                       onClick={() => {
                         navigator.clipboard.writeText(keyString);
                         toast.success("Secret Key copied!");
                       }}
-                      className="ml-auto opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-foreground flex-shrink-0"
+                      className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-foreground flex-shrink-0"
                       title="Copy Secret Key"
                     >
                       <Copy className="w-3.5 h-3.5" />
