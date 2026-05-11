@@ -54,9 +54,11 @@ export default function Home() {
   React.useEffect(() => {
     if (webrtc.receivedFile) {
       const { blob, metadata } = webrtc.receivedFile;
-      const item = createFileItem(blob, metadata);
-      setReceivedItems(prev => [item, ...prev]);
-      toast.success(`File received: ${metadata.fileName}`, { duration: 3000 });
+      (async () => {
+        const item = await createFileItem(blob, metadata);
+        setReceivedItems(prev => [item, ...prev]);
+        toast.success(`File received: ${metadata.fileName}`, { duration: 3000 });
+      })();
     }
   }, [webrtc.receivedFile]);
 
@@ -65,10 +67,6 @@ export default function Home() {
   };
 
   const handleClearAll = () => {
-    // Revoke object URLs to free memory
-    receivedItems.forEach(item => {
-      if (item.objectUrl) URL.revokeObjectURL(item.objectUrl);
-    });
     setReceivedItems([]);
   };
 

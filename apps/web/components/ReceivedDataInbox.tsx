@@ -33,7 +33,7 @@ export interface ReceivedItem {
   // File fields
   blob?: Blob;
   metadata?: FileMetadata;
-  objectUrl?: string;
+  dataUrl?: string;
 }
 
 interface ReceivedDataInboxProps {
@@ -72,15 +72,23 @@ export function createTextItem(text: string): ReceivedItem {
   };
 }
 
-export function createFileItem(blob: Blob, metadata: FileMetadata): ReceivedItem {
+export async function createFileItem(blob: Blob, metadata: FileMetadata): Promise<ReceivedItem> {
   const id = `item-${Date.now()}-${++itemCounter}`;
+
+  // Convert blob to data URL (works in Brave, Safari, all browsers)
+  const dataUrl = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+
   return {
     id,
     type: 'file',
     timestamp: new Date(),
     blob,
     metadata,
-    objectUrl: URL.createObjectURL(blob),
+    dataUrl,
   };
 }
 
@@ -294,11 +302,11 @@ function FileCard({ item, onDismiss }: { item: ReceivedItem; onDismiss: () => vo
       </div>
 
       {/* Image Preview */}
-      {isImage && item.objectUrl && (
+      {isImage && item.dataUrl && (
         <div className="px-4 pt-3">
           <div className="rounded-xl overflow-hidden border border-border/30 bg-black/5">
             <img
-              src={item.objectUrl}
+              src={item.dataUrl}
               alt={item.metadata?.fileName || 'Image preview'}
               className="w-full max-h-[300px] object-contain"
             />
@@ -309,7 +317,7 @@ function FileCard({ item, onDismiss }: { item: ReceivedItem; onDismiss: () => vo
       {/* Download Button */}
       <div className="p-4 flex items-center gap-3">
         <a
-          href={item.objectUrl || '#'}
+          href={item.dataUrl || '#'}
           download={item.metadata?.fileName}
           className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium py-3 rounded-xl hover:bg-primary/90 transition-colors shadow-sm active:scale-[0.98]"
         >
