@@ -316,14 +316,42 @@ function FileCard({ item, onDismiss }: { item: ReceivedItem; onDismiss: () => vo
 
       {/* Download Button */}
       <div className="p-4 flex items-center gap-3">
-        <a
-          href={item.dataUrl || '#'}
-          download={item.metadata?.fileName}
+        <button
+          onClick={async () => {
+            if (!item.blob || !item.metadata) return;
+
+            // Try Web Share API first (works great on mobile)
+            if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+              try {
+                const file = new File([item.blob], item.metadata.fileName, { type: item.metadata.fileType });
+                if (navigator.canShare({ files: [file] })) {
+                  await navigator.share({
+                    files: [file],
+                    title: item.metadata.fileName,
+                  });
+                  return;
+                }
+              } catch (err) {
+                // User cancelled or share failed — fall through to blob download
+                if ((err as Error).name === 'AbortError') return;
+              }
+            }
+
+            // Fallback: blob URL download (works on desktop)
+            const url = URL.createObjectURL(item.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = item.metadata.fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+          }}
           className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium py-3 rounded-xl hover:bg-primary/90 transition-colors shadow-sm active:scale-[0.98]"
         >
           <Download className="w-4 h-4" />
           <span>Download File</span>
-        </a>
+        </button>
         <div className="text-[10px] text-muted-foreground text-center flex-shrink-0 max-w-[80px]">
           {item.metadata?.fileType || 'Unknown'}
         </div>
