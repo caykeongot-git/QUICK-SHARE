@@ -1,0 +1,20 @@
+{
+  "name": "quickshare-signaling",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QuickShare Edge Signaling Server — Hono.js on Cloudflare Workers with Durable Objects",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "nanoid": "^5.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250510.0",
+    "typescript": "^5.8.0",
+    "wrangler": "^4.14.0"
+  }
+}

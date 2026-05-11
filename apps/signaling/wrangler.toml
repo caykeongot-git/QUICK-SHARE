@@ -1,0 +1,23 @@
+name = "quickshare-signaling"
+main = "src/index.ts"
+compatibility_date = "2025-05-10"
+compatibility_flags = ["nodejs_compat"]
+
+# Durable Object binding — RoomCoordinator
+[durable_objects]
+bindings = [
+  { name = "ROOM", class_name = "RoomCoordinator" }
+]
+
+# Durable Object migration
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomCoordinator"]
+
+# Development settings
+[dev]
+port = 8787
+
+# Environment variables (override in Cloudflare dashboard for production)
+[vars]
+ENVIRONMENT = "development"

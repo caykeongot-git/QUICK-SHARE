@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;      /* #FAFAFA Soft cream/off-white */
+    --foreground: 20 14.3% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14.3% 4.1%;
+    --primary: 282 34% 81%;      /* #D7BDE2 Soft Pastel Lavender */
+    --primary-foreground: 26 83.3% 14.1%;
+    --secondary: 168 53% 76%;    /* #A3E4D7 Mint Green */
+    --secondary-foreground: 24 9.8% 10%;
+    --muted: 60 4.8% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
+    --accent: 60 4.8% 95.9%;
+    --accent-foreground: 24 9.8% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 282 34% 81%;
+    --radius: 1rem;
+    
+    /* Glassmorphism Variables */
+    --glass-bg: rgba(255, 255, 255, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.5);
+  }
+
+  .dark {
+    --background: 30 14% 15%;    /* #2C2621 Warm dark espresso */
+    --foreground: 60 9.1% 97.8%;
+    --card: 20 14.3% 4.1%;
+    --card-foreground: 60 9.1% 97.8%;
+    --popover: 20 14.3% 4.1%;
+    --popover-foreground: 60 9.1% 97.8%;
+    --primary: 38 92% 55%;       /* #F5A623 Warm Amber/Orange */
+    --primary-foreground: 26 83.3% 14.1%;
+    --secondary: 12 6.5% 15.1%;
+    --secondary-foreground: 60 9.1% 97.8%;
+    --muted: 12 6.5% 15.1%;
+    --muted-foreground: 24 5.4% 63.9%;
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 60 9.1% 97.8%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 12 6.5% 15.1%;
+    --input: 12 6.5% 15.1%;
+    --ring: 38 92% 55%;
+    
+    /* Glassmorphism Variables */
+    --glass-bg: rgba(0, 0, 0, 0.3);
+    --glass-border: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-panel {
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Smooth Transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Animated Mesh Gradient Keyframes */
+@keyframes mesh {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.mesh-bg-light {
+  background: radial-gradient(at 0% 0%, hsla(282, 34%, 81%, 0.3) 0px, transparent 50%),
+              radial-gradient(at 100% 0%, hsla(168, 53%, 76%, 0.3) 0px, transparent 50%),
+              radial-gradient(at 100% 100%, hsla(282, 34%, 81%, 0.3) 0px, transparent 50%),
+              radial-gradient(at 0% 100%, hsla(168, 53%, 76%, 0.3) 0px, transparent 50%);
+  background-size: 200% 200%;
+  animation: mesh 15s ease infinite;
+}
+
+.mesh-bg-dark {
+  background: radial-gradient(at 0% 0%, hsla(38, 92%, 55%, 0.05) 0px, transparent 50%),
+              radial-gradient(at 100% 0%, hsla(30, 14%, 15%, 0) 0px, transparent 50%),
+              radial-gradient(at 100% 100%, hsla(38, 92%, 55%, 0.05) 0px, transparent 50%),
+              radial-gradient(at 0% 100%, hsla(30, 14%, 15%, 0) 0px, transparent 50%);
+  background-size: 200% 200%;
+  animation: mesh 15s ease infinite;
+}

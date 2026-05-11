@@ -1,0 +1,198 @@
+﻿Chiến Lược Phát Triển Kiến Trúc và Sản Phẩm Cho QuickShare: Ứng Dụng Chia Sẻ Dữ Liệu Tốc Độ Cao Tích Hợp Tác Tử Trí Tuệ Nhân Tạo
+Phần Mở Đầu: Nhu Cầu Tối Ưu Hóa Quy Trình Làm Việc Kỹ Thuật Số
+Trong bối cảnh môi trường học tập và phát triển phần mềm hiện đại, quy trình trao đổi dữ liệu kỹ thuật số đang phải đối mặt với một nút thắt cổ chai nghiêm trọng liên quan đến các ma sát vi mô (micro-frictions). Tại các phòng thực hành của trường đại học hoặc trong quá trình cộng tác nhóm, người dùng thường xuyên nảy sinh nhu cầu chia sẻ dữ liệu tạm thời (ephemeral data)—chẳng hạn như một đoạn mã nguồn (code snippet), một tệp tin cấu hình, hoặc một ảnh chụp màn hình báo lỗi. Tuy nhiên, việc phụ thuộc vào các nền tảng lưu trữ và nhắn tin truyền thống như Google Drive, Zalo, hay Facebook Messenger lại mang đến một trải nghiệm thiếu tối ưu và đầy rườm rà.1
+Các nền tảng này thường yêu cầu người dùng phải thực hiện hàng loạt thao tác chuyển đổi ngữ cảnh, đăng nhập xác thực, điều hướng qua các thư mục phức tạp, và quản lý quyền truy cập cho những dữ liệu vốn dĩ chỉ mang giá trị sử dụng trong một khoảng thời gian cực kỳ ngắn.1 Hơn thế nữa, các ứng dụng nhắn tin như Zalo hay Messenger thường tự động nén tệp tin, làm giảm chất lượng hình ảnh, đồng thời trộn lẫn các dữ liệu công việc mang tính tiện ích với các luồng giao tiếp mạng xã hội cá nhân.3 Điều này không chỉ gây lãng phí thời gian mà còn tạo ra sự phân tâm đáng kể đối với luồng tư duy và hiệu suất làm việc của sinh viên cũng như các nhà phát triển.
+Ý tưởng xây dựng một ứng dụng web mang tên "QuickShare" nhằm giải quyết triệt để những điểm nghẽn này đại diện cho một bước tiến quan trọng trong thị trường phần mềm tiện ích. Mục tiêu cốt lõi của QuickShare là kiến tạo một giao thức truyền tải dữ liệu trực tiếp, hoàn toàn loại bỏ yêu cầu đăng nhập, tập trung vào tính phù du của dữ liệu (ephemeral sharing), và được bao bọc bởi một giao diện người dùng (UI) tối giản nhưng có độ thẩm mỹ và tiện dụng cao. Đặc biệt, theo định hướng thiết kế, ứng dụng này cần hoạt động dựa trên một kiến trúc máy chủ (backend) siêu nhẹ để giảm thiểu chi phí và độ trễ, đồng thời tích hợp các tác tử thông minh (Agent) để tự động hóa và tăng tốc tối đa trải nghiệm người dùng.5
+Báo cáo nghiên cứu này sẽ trình bày một phân tích toàn diện và sâu sắc về các chiến lược kiến trúc, công nghệ và phát triển sản phẩm cần thiết để hiện thực hóa QuickShare. Quá trình phân tích sẽ trải dài từ việc đánh giá các đối thủ cạnh tranh trên thị trường, xây dựng chiến lược trải nghiệm người dùng (UX) thông qua kiến trúc điều khiển bằng lệnh (Command-Driven Architecture), cho đến việc tích hợp các tác tử Trí tuệ Nhân tạo (AI) chạy trực tiếp trên trình duyệt. Cuối cùng, báo cáo sẽ phác thảo một mô hình máy chủ serverless không tiêu tốn băng thông đầu ra (zero-egress) và các phương thức kỹ thuật để vượt qua các rào cản mạng nội bộ khắt khe thường thấy tại các phòng thực hành đại học.
+Phân Tích Bối Cảnh Thị Trường và Điểm Yếu Của Các Nền Tảng Khác
+Để định vị QuickShare một cách chiến lược, việc phân tích chi tiết hệ sinh thái chia sẻ tệp ngang hàng (Peer-to-Peer - P2P) và chia sẻ dữ liệu tạm thời hiện tại là một bước không thể thiếu. Thị trường hiện đang tồn tại nhiều giải pháp khác nhau, tuy nhiên, mỗi mô hình đều mang những sự đánh đổi và hạn chế nhất định về mặt kiến trúc phần mềm và bảo mật.
+Trong nhóm giải pháp sử dụng Mạng Nội Bộ (Local Network), các ứng dụng như Snapdrop và phiên bản phân nhánh của nó là PairDrop được thiết kế để mô phỏng tính năng AirDrop của hệ sinh thái Apple trên môi trường đa nền tảng.6 Các công cụ này hoạt động bằng cách phát hiện các thiết bị ngang hàng trên cùng một mạng cục bộ (LAN) thông qua công nghệ WebRTC.6 Mặc dù mang lại sự tiện lợi đáng kể khi người dùng có thể chia sẻ tệp mà không cần gửi dữ liệu qua Internet, các công cụ này lại bộc lộ những hạn chế nghiêm trọng trong các hệ thống mạng bị phân mảnh hoặc được quản lý chặt chẽ. Cụ thể, tại các phòng lab của trường đại học, hệ thống mạng thường áp dụng cơ chế cô lập máy khách (client isolation), ngăn cản hoàn toàn việc giao tiếp trực tiếp giữa hai máy tính dù chúng đang kết nối vào cùng một điểm truy cập Wi-Fi.6 Hơn nữa, sự phụ thuộc hoàn toàn vào giao thức UDP (User Datagram Protocol) khiến các ứng dụng này dễ dàng bị tê liệt nếu tường lửa của nhà trường chặn lưu lượng UDP để ngăn chặn việc chơi game hoặc sử dụng torrent.8 Khả năng xử lý các tệp tin có dung lượng lên đến nhiều gigabyte của mô hình này cũng thường thiếu ổn định và dễ gây sập trình duyệt do giới hạn bộ nhớ.6
+Mô hình thứ hai là Mô hình Chuyển tiếp Đám mây (Cloud-Relay) và Phát trực tuyến (Streaming), được đại diện bởi các dịch vụ như WeTransfer, Smash và Wormhole. Các dịch vụ này cho phép người dùng chia sẻ tệp vượt ra ngoài ranh giới mạng cục bộ. Smash là một công cụ nổi bật nhờ việc loại bỏ giới hạn kích thước tệp, một đặc điểm hiếm thấy ở các ứng dụng miễn phí, tuy nhiên, người dùng không trả phí sẽ bị bóp băng thông nghiêm trọng và dữ liệu vẫn bị lưu trữ trên các máy chủ của bên thứ ba.1 Wormhole mang đến một cách tiếp cận an toàn và tiên tiến hơn nhiều khi ứng dụng tiêu chuẩn Mã hóa Đầu cuối (E2EE) sử dụng thuật toán AES-GCM 128-bit.3 Dịch vụ này lưu trữ các tệp dưới 5GB trên máy chủ đám mây trong vòng 24 giờ, trong khi các tệp lớn hơn sẽ dựa vào giao thức WebTorrent, đòi hỏi cả người gửi và người nhận phải duy trì trạng thái trực tuyến.3 Điểm sáng lớn nhất của Wormhole là khả năng "phát trực tuyến tức thì" (instant streaming), cho phép người nhận bắt đầu tải xuống tệp ngay cả khi quá trình tải lên của người gửi chưa hoàn tất, giúp tiết kiệm đáng kể thời gian chờ đợi.3 Mặc dù vậy, thiết kế của Wormhole tập trung hoàn toàn vào tệp tin (file) và thiếu đi các công cụ hỗ trợ cho việc chia sẻ văn bản thô hoặc đoạn mã nguồn (code snippet).
+Mô hình thứ ba đại diện cho cơ chế Ngang hàng Thuần túy (Pure Peer-to-Peer), nổi bật nhất là ToffeeShare. Ứng dụng này sử dụng kết nối WebRTC trực tiếp và được bảo mật bởi giao thức Datagram Transport Layer Security (DTLS 1.3), đảm bảo rằng tệp tin di chuyển thẳng từ trình duyệt của người gửi đến trình duyệt của người nhận mà hoàn toàn không chạm vào bất kỳ máy chủ trung gian nào.10 Việc không lưu trữ dữ liệu trên máy chủ mang lại khả năng truyền tải tệp không giới hạn kích thước, đồng thời giảm thiểu lượng khí thải carbon so với các giải pháp đám mây.1 Tuy nhiên, sự đánh đổi của mô hình này nằm ở tính đồng bộ: nếu người gửi vô tình đóng tab trình duyệt trước khi người nhận hoàn tất việc tải xuống, quá trình truyền tải sẽ thất bại ngay lập tức.1
+Từ những phân tích trên, kiến trúc của QuickShare cần được định hướng để dung hòa những ưu điểm của các mô hình hiện tại, đồng thời khắc phục các nhược điểm chí mạng trong môi trường mạng đại học.
+Yếu Tố Kỹ Thuật
+	Nhóm Snapdrop / PairDrop
+	Nhóm Wormhole
+	Nhóm ToffeeShare
+	Định Hướng QuickShare
+	Sự Phụ Thuộc Mạng
+	Mạng LAN Nội Bộ
+	Máy Chủ Đám Mây
+	Kết nối Internet P2P
+	Mô Hình Lai (LAN + TURN Server qua Internet)
+	Lưu Trữ Tại Máy Chủ
+	Hoàn Toàn Không
+	Lưu Trữ 24 Giờ (dưới 5GB)
+	Hoàn Toàn Không
+	Chỉ Xử Lý Tín Hiệu (Signaling), Không Lưu Dữ Liệu
+	Mô Hình Mã Hóa
+	Mã Hóa Khi Di Chuyển (In-transit)
+	Mã Hóa Đầu Cuối (AES-GCM)
+	Mã Hóa Đầu Cuối (DTLS 1.3)
+	Mã Hóa Đầu Cuối Tại Client (Web Crypto API)
+	Hỗ Trợ Định Dạng Văn Bản
+	Rất Hạn Chế
+	Không Hỗ Trợ
+	Không Hỗ Trợ
+	Nhận Diện Cú Pháp Mã Nguồn & Định Dạng Tự Động
+	QuickShare sẽ tạo ra sự khác biệt thông qua việc hỗ trợ đồng thời cả chia sẻ tệp tin và chia sẻ văn bản với định dạng phong phú, nhắm trực tiếp đến đối tượng sinh viên và lập trình viên. Sự kết hợp giữa khả năng phục hồi mạng thông minh và sự hỗ trợ mạnh mẽ của tác tử AI sẽ là chìa khóa để tạo ra sự khác biệt trên thị trường.
+Chiến Lược Triển Khai UI/UX: Kiến Trúc Điều Khiển Bằng Lệnh (Command-Driven) và Tính Tối Giản
+Việc yêu cầu một giao diện "đẹp và tiện lợi" nhưng không cần phụ thuộc vào các hiệu ứng hoạt hình (animation) phức tạp và nặng nề đòi hỏi một tư duy thiết kế đặt sự tối giản chức năng (functional minimalism) lên hàng đầu. Trong các công cụ tiện ích tốc độ cao dành cho giới công nghệ, việc lạm dụng hoạt họa hoặc các cấu trúc menu lớp lang sâu thường gây ra cảm giác chậm chạp và làm tăng tải nhận thức (cognitive load) của người dùng. Để tối ưu hóa quá trình này, QuickShare cần được xây dựng xoay quanh cơ chế Điều Khiển Bằng Lệnh (Command-Driven Architecture).
+Ứng Dụng Mô Hình Command Palette (Bảng Lệnh)
+Command Palette (Bảng lệnh) là một mô hình thiết kế trải nghiệm người dùng hiện đại, xuất phát từ các trình soạn thảo mã nguồn như Visual Studio Code và Sublime Text, và hiện đang trở thành tiêu chuẩn vàng trong các ứng dụng năng suất (productivity apps) như Notion hay Figma.11 Thay vì ép buộc người dùng phải sử dụng chuột để tìm kiếm qua các thanh công cụ, Bảng Lệnh cung cấp một bề mặt duy nhất, ưu tiên sử dụng bàn phím (keyboard-first) để truy cập nhanh mọi chức năng của ứng dụng.12
+Đối với QuickShare, Command Palette sẽ đóng vai trò là "bộ não" điều phối toàn bộ luồng hành vi của người dùng. Ngay khi người dùng truy cập trang web, họ chỉ cần nhấn tổ hợp phím tắt (thông thường là Ctrl+K hoặc ⌘K trên macOS) để triệu hồi một hộp thoại trung tâm. Hệ thống này được cấu thành từ các yếu tố cốt lõi được liệt kê trong bảng dưới đây, giúp loại bỏ hoàn toàn các rào cản về mặt điều hướng.
+
+
+Thành Phần Của Bảng Lệnh
+	Chức Năng và Yêu Cầu Thiết Kế UI/UX
+	Thanh Kích Hoạt (Trigger)
+	Một thanh tìm kiếm mờ hoặc nút bấm tinh tế hiển thị gợi ý phím tắt ⌘K, không chiếm quá nhiều không gian trên màn hình.11
+	Ô Nhập Tìm Kiếm (Search Input)
+	Tự động lấy tiêu điểm (auto-focus) ngay khi mở. Ô nhập này ghi nhận truy vấn của người dùng với độ trễ bằng không và giữ tiêu điểm cố định bên trong bảng điều khiển.13
+	Kết Quả Được Phân Nhóm (Grouped Results)
+	Hiển thị các hành động (actions) được chia thành các danh mục trực quan. Ví dụ: "Dữ liệu gần đây", "Lệnh chia sẻ", "Công cụ AI".11
+	Mục Kết Quả (Result Item)
+	Trình bày rõ ràng tên lệnh, văn bản gợi ý bổ sung và phím tắt thao tác nhanh (shortcut) cho từng hành động cụ thể.12
+	Thông qua kiến trúc này, khi người dùng cần gửi một tệp tin, thay vì tìm kiếm nút "Tải lên", họ chỉ cần nhấn ⌘K, gõ vài ký tự như "Gửi..." (Send) và hệ thống sẽ tự động lọc ra các lựa chọn như "Gửi Tệp", "Gửi Dữ Liệu Từ Clipboard", hoặc "Gửi Đoạn Mã". Sự kết hợp giữa Bảng lệnh và các thư viện mã nguồn mở chuyên dụng cho React như cmdk hay kbar không chỉ giúp tiết kiệm thời gian phát triển mà còn đảm bảo tuân thủ nghiêm ngặt các tiêu chuẩn về khả năng truy cập (Accessibility - ARIA), quản lý tiêu điểm (focus management) và hỗ trợ trình đọc màn hình.13
+Lý Thuyết Màu Sắc Tối Giản và Tập Trung
+Giao diện của một ứng dụng tiện ích không được phép làm phân tâm người dùng khỏi luồng công việc chính. Định hướng thẩm mỹ của QuickShare nên dựa vào các cấu trúc thị giác tinh tế thay vì các hình ảnh đồ họa cầu kỳ. Bảng màu cần phản ánh tính chuyên nghiệp, sự hiện đại và mang lại cảm giác dễ chịu cho mắt (đặc biệt khi lập trình viên thường xuyên làm việc trong môi trường thiếu sáng).
+Dựa trên các xu hướng thiết kế web hàng đầu, QuickShare nên áp dụng một trong những chiến lược phối màu sau:
+* Xám Tối Giản (Minimalist Grays): Việc sử dụng các tông màu xám lạnh (chẳng hạn như mã màu #B0B0B0 và #4A4A4A) kết hợp với phông nền trắng hoặc đen tuyền giúp tạo ra một giao diện sắc sảo, không gây nhiễu thị giác.15
+* Xanh Lam Đơn Sắc (Monochromatic Blues): Áp dụng các dải màu xanh lam như #0A74DA phối hợp cùng #74C0FC sẽ mang lại cảm giác đáng tin cậy, bảo mật và tính kỹ thuật cao, vốn rất phù hợp cho một ứng dụng tập trung vào bảo mật dữ liệu.15
+* Tông Màu Đất Nhẹ (Muted Earth Tones): Đối với một trải nghiệm dịu nhẹ và giảm thiểu tối đa hiện tượng mỏi mắt, các màu như #A3B18A và #344E41 cung cấp một diện mạo hiện đại nhưng vẫn đảm bảo sự cân bằng.15
+Đồng thời, cấu trúc phông chữ (Typography) của hệ thống cần phụ thuộc hoàn toàn vào các phông chữ hệ thống không có chân (san-serif) mặc định như San Francisco (trên Apple), Roboto (trên Android) hoặc Segoe UI (trên Windows). Việc loại bỏ các thư viện phông chữ nhúng từ bên ngoài (như Google Fonts) sẽ loại bỏ hoàn toàn độ trễ khi tải trang, đảm bảo ứng dụng có thể đạt chỉ số Thời Gian Hiển Thị Nội Dung Đầu Tiên (First Contentful Paint - FCP) gần như ngay lập tức.
+Khả Năng Tích Hợp Sâu Bằng Web Share Target API
+Để đạt được sự tiện lợi tương đương với các ứng dụng bản địa (native apps) như Zalo hay Messenger, QuickShare cần được xây dựng theo chuẩn Ứng Dụng Web Tiến Bộ (Progressive Web App - PWA).16 Bằng cách khai thác giao diện lập trình ứng dụng Web Share Target API, QuickShare có khả năng đăng ký bản thân như một điểm đến chia sẻ hợp lệ ở cấp độ hệ điều hành.16 Điều này đồng nghĩa với việc khi người dùng bôi đen một đoạn văn bản trong trình duyệt, hoặc chọn một bức ảnh trong thư viện trên điện thoại, họ có thể nhấn nút "Chia sẻ" (Share) mặc định của hệ thống và trực tiếp đẩy dữ liệu đó thẳng vào QuickShare. Hành động này diễn ra liền mạch mà không yêu cầu người dùng phải tự mở trình duyệt web và dán dữ liệu theo cách thủ công.
+Tích Hợp Tác Tử Trí Tuệ Nhân Tạo Tại Trình Duyệt: Tự Động Hóa Thông Minh
+Một trong những yêu cầu cốt lõi được đặt ra là sự tham gia của một "Tác tử" (Agent) nhằm gia tăng tốc độ làm việc. Trong hệ sinh thái phần mềm hiện đại, ranh giới giữa một phần mềm tĩnh và một không gian làm việc tương tác được định hình bởi khả năng của AI.17 Các tác tử AI khác biệt so với các bot truyền thống ở khả năng hoạt động chủ động, xử lý các tác vụ phức tạp gồm nhiều bước và có thể phân tích thông tin đa phương thức.5
+Tuy nhiên, việc triển khai các Mô hình Ngôn ngữ Lớn (LLM) đòi hỏi cấu hình máy chủ khổng lồ và chi phí duy trì đắt đỏ, điều này đi ngược lại với tiêu chí "máy chủ không quá nặng". Thay vào đó, QuickShare sẽ định nghĩa lại khái niệm "Tác tử" bằng cách triển khai các mô hình Trí tuệ Nhân tạo nhẹ, chạy trực tiếp trên thiết bị của khách hàng (client-side AI). Phương pháp này giúp hệ thống sở hữu sự thông minh, chủ động mà không tạo ra bất kỳ độ trễ hay gánh nặng nào cho máy chủ.
+
+
+Năng Lực Tác Tử AI (Agentic Capabilities)
+	Cơ Chế Hoạt Động Kỹ Thuật (Natives & Client-side)
+	Ứng Dụng Thực Tế Trong QuickShare
+	Nhận Diện Ký Tự Quang Học (OCR)
+	Biên dịch thư viện Tesseract.js sang WebAssembly để thực thi việc phân tích hình ảnh ngay bên trong trình duyệt.18
+	Khi sinh viên chụp ảnh màn hình bài giảng hoặc đoạn lỗi code, Tác tử tự động đề xuất nút "Trích xuất văn bản", chuyển ảnh thành text có thể copy được mà không cần kết nối tới máy chủ.
+	Tiền Xử Lý Hình Ảnh Thông Minh
+	Sử dụng WebGL hoặc Canvas API để tự động chuyển đổi ảnh sang thang độ xám (grayscale) và tăng độ tương phản (thresholding) trước khi chạy OCR.20
+	Đảm bảo độ chính xác của OCR được tối ưu hóa ngay cả khi ảnh chụp từ màn hình máy chiếu bị mờ hoặc có độ sáng không đều.20
+	Phân Tích Ngữ Nghĩa và Tự Động Định Dạng
+	Phân tích các biểu thức chính quy (Regex) và cấu trúc từ vựng của dữ liệu được người dùng dán (paste) vào hệ thống.21
+	Tác tử nhận diện tự động liệu nội dung là văn bản thuần, mã JSON, Python hay C++. Sau đó, hệ thống sẽ gọi thư viện Highlight.js để hiển thị màu sắc cú pháp một cách chuyên nghiệp.21
+	Việc trích xuất văn bản từ hình ảnh đặc biệt quan trọng trong các bối cảnh giáo dục. Thay vì phải gõ lại từng dòng lệnh từ một video hướng dẫn hoặc một slide bài giảng bị khóa sao chép, người dùng chỉ cần dán bức ảnh vào QuickShare. Tác tử sẽ phản ứng chủ động ngay lập tức, tiền xử lý hình ảnh và chuyển đổi dữ liệu quang học thành văn bản thô. Tesseract.js có thể được thu gọn và tùy chỉnh để chỉ tải duy nhất bộ từ điển tiếng Anh và tiếng Việt, giảm kích thước tệp tải xuống ban đầu và tối ưu hóa thời gian tính toán.
+Cùng với chức năng tự động nhận diện ngôn ngữ lập trình, tính năng này biến QuickShare từ một đường ống truyền tệp đơn thuần thành một không gian sổ tay cộng tác thông minh, lý tưởng cho việc lập trình cặp (pair programming) hay giải quyết các bài tập nhóm.22 Tác tử không còn là một chatbot để trò chuyện, mà đóng vai trò như một luồng công việc vô hình, liên tục giảm thiểu số lần nhấp chuột (clicks) của người dùng xuống mức tối đa.
+Kiến Trúc Máy Chủ Siêu Nhẹ: Đẩy Ranh Giới Ra Khỏi Các Nền Tảng Đám Mây Truyền Thống
+Sự thành công của một ứng dụng đòi hỏi tốc độ như QuickShare phụ thuộc hoàn toàn vào kiến trúc backend. Các hệ thống lưu trữ tệp và chia sẻ dữ liệu thông thường thường xuyên phải dựa vào các cụm máy chủ ảo (VPS) hoặc hạ tầng đám mây cồng kềnh như Amazon S3 hay Google Cloud Storage, kéo theo việc sử dụng Node.js hoặc Django để quản lý định tuyến.24 Cách tiếp cận này tạo ra những khoản phí cực lớn liên quan đến băng thông đầu ra (egress costs) khi dữ liệu truyền qua máy chủ.26 Nó cũng tạo ra độ trễ cao khi người dùng ở cách xa khu vực địa lý của máy chủ trung tâm.
+Để tuân thủ tuyệt đối yêu cầu về một hệ thống backend siêu nhẹ, QuickShare sẽ khai thác sức mạnh của kiến trúc Điện toán Tại biên cạnh (Edge Computing) và Serverless, kết hợp giữa nền tảng Cloudflare Workers và framework Hono.js.
+Ưu Thế Của Framework Hono.js và Tiêu Chuẩn WinterCG
+Hono.js đã khẳng định vị thế là một trong những framework định tuyến web nhanh nhất và hiện đại nhất trên thị trường hiện nay.27 Khác biệt với Express.js truyền thống vốn bị ràng buộc chặt chẽ vào môi trường Node.js, Hono.js được thiết kế từ đầu dựa trên các tiêu chuẩn web cốt lõi của tổ chức WinterCG, bao gồm Request, Response, ReadableStream, và WebCrypto.27 Nhờ đó, một ứng dụng Hono duy nhất có thể được triển khai trực tiếp trên Cloudflare Workers, Deno, Bun, hoặc AWS Lambda mà không cần sửa đổi logic nghiệp vụ.27
+Được trang bị bộ định tuyến RegExpRouter mạnh mẽ, Hono.js dễ dàng vượt trội về mặt hiệu năng xử lý các kết nối đồng thời so với những công cụ cũ hơn.27 Khi triển khai trên Cloudflare Workers, mã nguồn của QuickShare sẽ được phân phối toàn cầu đến hàng trăm trung tâm dữ liệu. Một người dùng tại Việt Nam sẽ được phục vụ bởi máy chủ biên tại TP.HCM hoặc Hà Nội thay vì phải định tuyến sang Mỹ, mang lại độ trễ chỉ dưới vài chục mili-giây. Các chức năng quan trọng như CORS, bảo mật tiêu đề (secure headers), cấu hình WebSocket và giới hạn kích thước nội dung đều được tích hợp sẵn trong nhân của Hono mà không cần cài đặt thêm hàng loạt plugin phụ thuộc bên ngoài, giữ cho bộ nguồn máy chủ luôn trong trạng thái nhẹ gọn nhất.27
+Đóng Vai Trò Là Nút Báo Hiệu (Signaling) với Durable Objects
+Trong kiến trúc WebRTC của QuickShare, các tệp tin và dữ liệu khổng lồ sẽ được truyền trực tiếp từ trình duyệt của người gửi sang trình duyệt của người nhận (P2P). Tuy nhiên, để hai trình duyệt có thể tìm thấy nhau trên môi trường Internet hỗn loạn, chúng cần một cơ sở hạ tầng làm nhiệm vụ "Mai mối" (Signaling). Quá trình signaling này yêu cầu các bên trao đổi những chuỗi văn bản nhỏ gọi là Giao thức Mô tả Phiên (SDP - Session Description Protocol) và các ứng viên ICE (Interactive Connectivity Establishment).26
+Vấn đề lớn nhất của mạng Serverless (như Cloudflare Workers) là chúng hoàn toàn phi trạng thái (stateless); một Worker xử lý yêu cầu rồi lập tức bị hủy. Để duy trì một phòng kết nối giữa người gửi và người nhận, QuickShare sẽ sử dụng Cloudflare Durable Objects.26 Một Durable Object là một thực thể cung cấp lưu trữ có trạng thái, tính nhất quán mạnh mẽ, và chỉ tồn tại duy nhất tại một khu vực địa lý cụ thể.26
+Quá trình này diễn ra như sau:
+1. Khởi tạo Phòng (Room Initialization): Người gửi mở QuickShare. Hono.js nhanh chóng tạo ra một ID Phòng độc nhất ngẫu nhiên và kích hoạt một cá thể Durable Object tương ứng.3
+2. Kết Nối Kênh Đôi (WebSocket): Trình duyệt của người gửi nâng cấp kết nối HTTP thông thường thành kết nối WebSocket bền vững, kết nối trực tiếp với Durable Object vừa được tạo ra.26
+3. Người Nhận Tham Gia: Khi người nhận truy cập vào liên kết chứa ID Phòng, trình duyệt của họ cũng kết nối đến chính xác Durable Object đó thông qua WebSocket.26
+4. Chuyển Tiếp Thông Điệp Kênh: Lúc này, Durable Object đóng vai trò là một người đưa thư trung thực. Nó nhận gói dữ liệu mô tả cấu trúc mạng (SDP và ICE candidates) từ người gửi và chuyển tức thì cho người nhận.26
+5. Luồng Dữ Liệu Ngang Hàng Được Thiết Lập: Một khi trình duyệt của hai bên đã đồng thuận về phương thức kết nối an toàn nhất, luồng WebRTC trực tiếp được mở ra.
+Kể từ thời điểm này, tệp tin dung lượng 10 Gigabyte hay một dòng mã nhỏ đều sẽ được di chuyển trên luồng trực tiếp giữa hai máy khách. Máy chủ Cloudflare hoàn toàn bị "rút phích" khỏi dòng chảy dữ liệu thực tế này. Chính sự phân ly giữa máy chủ điều phối và dòng dữ liệu đã cho phép QuickShare hoạt động mà không phải gánh chịu bất kỳ chi phí băng thông nào đối với việc chia sẻ tệp lớn, thỏa mãn tuyệt đối tiêu chí "máy chủ không quá nặng".26
+Vượt Qua Rào Cản Tường Lửa Tại Mạng Nội Bộ Đại Học: Sự Cần Thiết Của TURN Server
+Yêu cầu gốc của dự án chỉ định rất rõ ràng bối cảnh sử dụng là tại "quá trình học thực hành ở trường". Mạng không dây tại các trường đại học hoặc các phòng thí nghiệm công nghệ là những môi trường vô cùng phức tạp và thù địch đối với các giao thức truyền tải trực tiếp. Các chuyên gia quản trị hệ thống (sysadmin) tại đây thường xuyên thiết lập các lớp bảo mật cực kỳ chặt chẽ nhằm ngăn chặn sinh viên sử dụng phần mềm trái phép, phát tán virus, hoặc làm nghẽn băng thông của trường học.8
+Vì Sao WebRTC Bị Vô Hiệu Hóa Trong Môi Trường Cô Lập?
+Trong điều kiện mạng gia đình thông thường, giao thức WebRTC sử dụng các máy chủ STUN (Session Traversal Utilities for NAT).29 Nhiệm vụ duy nhất của máy chủ STUN là phản hồi lại địa chỉ IP công cộng (Public IP) và số cổng mà một thiết bị đang sử dụng sau khi đi qua bộ định tuyến NAT (Network Address Translation).29 Có được địa chỉ IP này, hai máy khách có thể trực tiếp gửi gói tin cho nhau.29 Theo thống kê, STUN có khả năng giải quyết được từ 80-85% các trường hợp kết nối P2P trên toàn cầu.34
+Tuy nhiên, tại môi trường mạng đại học, STUN hoàn toàn vô dụng do những nguyên lý quản trị sau:
+1. Symmetric NAT (NAT Đối Xứng): Bộ định tuyến của trường học thay đổi liên tục và ngẫu nhiên các cổng giao tiếp đối với mỗi máy chủ mà thiết bị kết nối đến, khiến việc gán một cổng tĩnh định sẵn cho một kết nối ngang hàng trở nên bất khả thi.29
+2. Chặn Mặc Định Giao Thức UDP: Phần lớn dữ liệu âm thanh, video, hay WebRTC truyền thống dựa vào luồng UDP. Để tránh tình trạng sinh viên sử dụng công cụ torrent hoặc các hệ thống phát trực tiếp tiêu tốn tài nguyên, tường lửa của mạng nội bộ thường được lập trình để thả rơi (drop) toàn bộ các gói tin UDP không xác định.8
+3. Cô Lập Máy Khách Cục Bộ (Client Isolation): Khi hai máy tính kết nối vào cùng một bộ phát Wi-Fi trong phòng thực hành, các thiết bị chuyển mạch (switch) sẽ cách ly chúng, khiến máy tính A không thể ping trực tiếp hay nhận dạng được sự tồn tại của máy tính B trên mạng nội bộ nhằm giảm nguy cơ lây lan phần mềm tống tiền (Ransomware).8
+Đồng thời, một rào cản khác đến từ chính trình duyệt web. Để chống lại các kỹ thuật theo dõi người dùng thông qua dấu vết kỹ thuật số, các phiên bản trình duyệt mới nhất đã áp dụng chuẩn kỹ thuật mới: vô hiệu hóa việc tiết lộ địa chỉ IP cục bộ thực sự (local IP addresses). Thay vì chia sẻ IP như 192.168.1.15, trình duyệt sẽ tạo ra các tên miền Multicast DNS (mDNS) được xáo trộn ngẫu nhiên (ví dụ: 1f4712db-ea17-4bcf-a596-105139dfd8bf.local).35 Do đó, việc định tuyến nội bộ thông thường giữa hai máy sinh viên sẽ hoàn toàn thất bại.35
+Giải Pháp Tối Thượng: Triển Khai TURN Server Qua Cổng TCP 443
+Để đảm bảo QuickShare luôn hoạt động một cách tin cậy 100%, không bị giới hạn bởi bất kỳ loại tường lửa hay cơ chế Symmetric NAT nào, nền tảng buộc phải cung cấp hệ thống máy chủ dự phòng TURN (Traversal Using Relays around NAT).33
+Khác với STUN, máy chủ TURN đóng vai trò là một điểm trung chuyển (relay) vật lý thực sự. Nếu hai trình duyệt nỗ lực tìm kiếm kết nối P2P trực tiếp thông qua ICE Framework mà thất bại do tường lửa ngăn cản, cơ chế WebRTC sẽ tự động thiết lập một đường hầm truyền tải bảo mật đến máy chủ TURN.29 Người gửi sẽ đẩy các khối dữ liệu mã hóa đến TURN, và TURN sẽ chuyển tiếp chúng đến người nhận.29
+Dưới đây là một bảng phân tích cách thức ICE Framework lựa chọn chiến lược vượt rào mạng trong các hoàn cảnh khác nhau, đảm bảo hiệu suất truyền tải của QuickShare.
+
+
+Loại Ứng Viên ICE (ICE Candidate)
+	Cơ Chế Hoạt Động Kỹ Thuật
+	Phù Hợp Với Môi Trường Mạng
+	Tỷ Lệ Thành Công Ước Tính
+	Host Candidate
+	Trao đổi trực tiếp IP cục bộ hoặc phân giải mDNS giữa các thiết bị.
+	Mạng gia đình / Mạng LAN mở (không có Client Isolation).
+	Cao (Trong điều kiện lý tưởng)
+	Server Reflexive
+	Sử dụng STUN để khám phá Public IP, đâm thủng NAT tiêu chuẩn.
+	Kết nối giữa 2 mạng gia đình riêng biệt.
+	~80 - 85% 34
+	Relay Candidate (UDP)
+	Chuyển tiếp toàn bộ gói tin UDP qua máy chủ TURN trung gian.
+	Tường lửa trung bình, Symmetric NAT cơ bản.
+	Rất Cao
+	Relay qua cổng TCP / 443
+	Đóng gói lưu lượng WebRTC và TURN vào kết nối TCP. Ngụy trang dưới lớp áo giao thức HTTPS.
+	Mạng doanh nghiệp / Đại học bảo mật cực cao, chặn hoàn toàn UDP.
+	Tuyệt Đối (100%) 37
+	Yếu tố quyết định ở đây là việc định cấu hình máy chủ TURN (sử dụng mã nguồn mở như Coturn 33) để lắng nghe cụ thể trên cổng TCP 443.37 Cổng 443 là cổng quy chuẩn toàn cầu cho lưu lượng HTTPS (Duyệt web bảo mật).37 Bất kỳ một quản trị viên mạng nào, dù khắt khe đến đâu, cũng không thể vô hiệu hóa cổng 443 bởi điều đó sẽ tương đương với việc cắt đứt hoàn toàn kết nối Internet của tổ chức. Bằng cách sử dụng TCP 443, lưu lượng chia sẻ tệp của QuickShare sẽ được tường lửa mạng nhà trường hiểu nhầm là các luồng duyệt web thông thường, cho phép vượt qua mọi bộ lọc gói tin khắt khe nhất.37
+Dù việc duy trì máy chủ TURN tiêu tốn một khoản băng thông nhất định, thực tế chứng minh số lượng kết nối phải dùng đến TURN thường chỉ chiếm một tỷ lệ nhỏ gọn (khoảng 15-20%).34 Để duy trì tiêu chí backend không quá nặng, dự án có thể tận dụng các dịch vụ TURN Server cung cấp gói miễn phí rộng rãi như Open Relay Project hoặc Metered.ca (hỗ trợ hàng chục khu vực địa lý trên toàn cầu) thay vì tự duy trì VPS tốn kém.38
+Bảo Mật Ở Mức Độ Zero-Trust Với Mã Hóa Đầu Cuối (E2EE) Thực Sự
+Khi người dùng cần chia sẻ nhanh các tài liệu mang tính tiện ích (utility data)—đặc biệt là mã nguồn cấu hình chứa khóa API, hình ảnh có chứa dữ liệu nhạy cảm hoặc ghi chú công việc, việc tin tưởng các ứng dụng thông thường là một rủi ro an ninh mạng nghiêm trọng. Hầu hết các ứng dụng phổ biến chia sẻ tài liệu như Zalo hay Messenger sử dụng tiêu chuẩn bảo mật gọi là Mã hóa trong quá trình truyền tải (In-transit Encryption, dựa trên giao thức TLS/HTTPS).41 Mặc dù điều này ngăn chặn các tác nhân xấu nghe lén trên mạng Wi-Fi công cộng, tuy nhiên các tệp tin lại bị giải mã dưới dạng văn bản rõ (plaintext) tại cấp độ máy chủ của nhà cung cấp.41
+Đối với QuickShare, vì không yêu cầu đăng nhập và không sở hữu cơ sở dữ liệu xác thực danh tính phức tạp, phương pháp duy nhất để bảo vệ thông tin là áp dụng mô hình bảo mật Không tin cậy (Zero-Trust) thông qua Mã Hóa Đầu Cuối thực sự (End-to-End Encryption - E2EE).41 Ở mô hình này, ngay cả khi máy chủ Cloudflare hay TURN bị tấn công, hoặc quản trị viên hệ thống cố tình trích xuất bộ nhớ, dữ liệu vẫn luôn trong tình trạng được mã hóa bằng các thuật toán quân sự và không thể bị giải mã.3
+Quy Trình Xử Lý Mật Mã Bằng Web Crypto API
+Nhằm đáp ứng yêu cầu tối ưu hóa tài nguyên phần mềm và tránh việc tải về các thư viện mã hóa JavaScript bên ngoài (có thể nặng nề và mang theo lỗ hổng chuỗi cung ứng), QuickShare sẽ tận dụng trực tiếp hàm Web Crypto API được xây dựng gốc trong lõi của các trình duyệt hiện đại.3 Chiến lược mật mã này kế thừa thiết kế tinh vi từ các hệ thống bảo mật hàng đầu như Wormhole.3
+Dưới đây là một mô tả tuần tự về cách dữ liệu được bảo vệ mà không cần sự can thiệp từ máy chủ:
+1. Sinh Khóa Độc Lập Tại Trình Duyệt: Ngay khi người dùng chọn một tệp hay dán một văn bản, trước khi gửi bất cứ thông tin nào đi, trình duyệt sẽ sử dụng API của hệ điều hành để tạo ra một Khóa bí mật chính (Main Secret Key) và một giá trị nhiễu ngẫu nhiên (Salt) dài 256-bit.3
+2. Dẫn Xuất Khóa Mật Mã: Sử dụng thuật toán dẫn xuất khóa HKDF kết hợp với SHA-256, khóa chính sẽ tạo ra nhiều khóa con dành riêng cho từng tác vụ cụ thể, ví dụ như Khóa Mã hóa Tệp (File Keys) và Khóa Ủy quyền Đọc (Reader Authorization Token).3
+3. Mã Hóa Xác Thực Khối (AES-GCM): Nội dung chia sẻ được mã hóa ngay tại trình duyệt bằng thuật toán AES-GCM 128-bit.3 Điểm mạnh của AES-GCM không chỉ là việc bảo vệ tính bảo mật, mà còn cung cấp cơ chế mã hóa xác thực (authenticated encryption). Bất kỳ sự xáo trộn hoặc giả mạo nào vào tệp tin khi đang được luân chuyển trên mạng Internet sẽ khiến quá trình giải mã thất bại ngay lập tức, báo động cho người nhận về sự can thiệp trái phép.3
+4. Cơ Chế Phân Phối Khóa Qua Phân Đoạn URI (URI Fragment): Thử thách lớn nhất của E2EE là làm sao chuyển chìa khóa giải mã cho người nhận mà không để máy chủ nhìn thấy. Giải pháp kỹ thuật hoàn hảo ở đây là sử dụng thành phần Phân đoạn URI (URI Fragment).3 Khóa bí mật sẽ được đính kèm vào đường liên kết URL ngay sau dấu thăng # (Ví dụ: https://quickshare.app/id-phong#khoa-bi-mat).3
+5. Nguyên Lý Bất Cố Hữu Của Trình Duyệt: Theo tiêu chuẩn thiết kế hạ tầng web toàn cầu, khi trình duyệt tạo ra một yêu cầu HTTP tải trang web, nó tuyệt đối không bao giờ gửi đoạn chuỗi nằm sau dấu # lên máy chủ.3 Do đó, máy chủ Hono.js chỉ nhận được ID phòng để kết nối tín hiệu (Signaling), trong khi chìa khóa thực sự vẫn nằm nguyên tại máy tính người gửi và người nhận.
+6. Giải Mã An Toàn Nơi Đích Đến: Khi người nhận nhấp vào liên kết, mã JavaScript của QuickShare trên máy họ sẽ trích xuất ID phòng từ URL, kết nối với máy chủ, tải xuống các khối dữ liệu đã bị mã hóa, và cuối cùng tự động dùng đoạn mã sau dấu # để giải mã trực tiếp trong không gian bộ nhớ trình duyệt, đưa tệp tin về nguyên trạng.3
+Sự kết hợp giữa Web Crypto API hiệu năng cao và thủ thuật URI Fragment không chỉ đảm bảo mức độ mã hóa không thể bị bẻ khóa theo tiêu chuẩn hiện tại, mà còn giữ cho ứng dụng hoạt động mượt mà, không gặp phải độ trễ tính toán.
+Kết Luận: Một Mô Hình Kiểu Mẫu Cho Sự Phù Du Kỹ Thuật Số
+Khát vọng xây dựng một ứng dụng tiện ích để loại bỏ sự cồng kềnh trong môi trường làm việc kỹ thuật số hàng ngày không chỉ là vấn đề về thiết kế giao diện, mà là bài toán của kiến trúc hệ thống và sự thấu hiểu hành vi người dùng.
+QuickShare, thông qua bản thiết kế kỹ thuật này, vượt qua những rào cản thông thường của các sản phẩm cạnh tranh. Bằng việc từ chối tích hợp với các máy chủ trung tâm lưu trữ nặng nề, QuickShare dựa vào mô hình Serverless tại vùng biên (Cloudflare Workers) và khung WebRTC hiện đại để giữ cho gánh nặng cơ sở hạ tầng tiệm cận mức số không, mở ra khả năng mở rộng không giới hạn.26 Khả năng xuyên thủng mọi rào cản mạng nội bộ khắt khe—như các phòng thực hành đại học hoặc các cơ quan bảo mật—được đảm bảo thông qua kỹ thuật kết nối TURN Server ngụy trang qua cổng TCP 443.37 Việc trao đổi thông tin được bảo vệ bằng mô hình mã hóa đầu cuối (E2EE) không cần cấu hình, cho phép ứng dụng luôn trung lập và ẩn danh đối với nội dung mà người dùng truyền tải.3
+Cuối cùng, phần hồn của QuickShare được định hình bởi triết lý thiết kế giao diện theo mô hình bảng điều khiển lệnh (Command Palette) kết hợp cùng một phong cách thẩm mỹ đơn giản, không rườm rà.13 Thay vì buộc người dùng phải học cách sử dụng ứng dụng, hệ thống sử dụng các tác tử AI hoạt động thầm lặng phía máy khách—tự động nhận dạng ảnh, trích xuất quang học (OCR), và định dạng khối mã nguồn—biến quá trình xử lý thủ công thành một chuỗi tự động thông minh, nhanh chóng và mượt mà.20 Bằng cách gói gọn tất cả những điều này trong một Ứng dụng Web Tiến bộ (PWA) hỗ trợ chức năng chia sẻ mục tiêu cấp hệ thống 16, QuickShare hoàn toàn đủ khả năng tái định nghĩa cách các chuyên gia công nghệ và sinh viên trao đổi các giá trị dữ liệu vi mô trong luồng công việc tương lai.
+Nguồn trích dẫn
+1. 5 Best No Signup File Sharing Services (Unlimited & Free) - Fastio, truy cập vào tháng 5 11, 2026, https://fast.io/resources/no-signup-file-sharing/
+2. The Best Document-Sharing Platforms in 2025 - Slack, truy cập vào tháng 5 11, 2026, https://slack.com/blog/collaboration/best-document-sharing-apps
+3. Wormhole - Simple, private file sharing, truy cập vào tháng 5 11, 2026, https://wormhole.app/
+4. Best Private Messaging Apps 2025 | Secure Chat Options - ProManage IT Solution, truy cập vào tháng 5 11, 2026, https://www.promanageitsolution.com/the-best-private-messaging-apps-2025-everything-you-need-to-know/
+5. What are AI agents? Definition, examples, and types | Google Cloud, truy cập vào tháng 5 11, 2026, https://cloud.google.com/discover/what-are-ai-agents
+6. PairDrop Full Reviews: Features & Best Alternative 2026 - Tenorshare, truy cập vào tháng 5 11, 2026, https://www.tenorshare.com/transfer/pairdrop-reviews.html
+7. PairDrop — Transfer files between devices seamlessly : r/selfhosted - Reddit, truy cập vào tháng 5 11, 2026, https://www.reddit.com/r/selfhosted/comments/1g1ve42/pairdrop_transfer_files_between_devices_seamlessly/
+8. Is UDP (on LAN side) typically blocked on corporate/school networks? : r/sysadmin - Reddit, truy cập vào tháng 5 11, 2026, https://www.reddit.com/r/sysadmin/comments/11vdo2s/is_udp_on_lan_side_typically_blocked_on/
+9. List of P2P file sharing tools - GitHub Gist, truy cập vào tháng 5 11, 2026, https://gist.github.com/SMUsamaShah/fd6e275e44009b72f64d0570256bb3b2
+10. Share files privately, fast and without size limit using ToffeeShare, truy cập vào tháng 5 11, 2026, https://toffeeshare.com/
+11. Command Palette | UX Patterns #1 - Medium, truy cập vào tháng 5 11, 2026, https://medium.com/design-bootcamp/command-palette-ux-patterns-1-d6b6e68f30c1
+12. Command Palette UI Design - Mobbin, truy cập vào tháng 5 11, 2026, https://mobbin.com/glossary/command-palette
+13. Command Palette - UX Patterns, truy cập vào tháng 5 11, 2026, https://uxpatterns.dev/patterns/advanced/command-palette
+14. Hono · Cloudflare Workers docs, truy cập vào tháng 5 11, 2026, https://developers.cloudflare.com/workers/framework-guides/web-apps/more-web-frameworks/hono/
+15. Top 10 Color Palettes for Web Design in 2024 - Milwaukee Web Design, truy cập vào tháng 5 11, 2026, https://milwaukee-webdesigner.com/resources/top-10-color-palettes-for-web-design-in-2024/
+16. Web Share Target API Integration - Progressier, truy cập vào tháng 5 11, 2026, https://progressier.com/features/web-share-target-api-implementation
+17. Adobe's New Productivity Agent Redefines How People Understand, Create and Share Information, truy cập vào tháng 5 11, 2026, https://news.adobe.com/news/2026/05/adobes-new-productivity-agent
+18. Tesseract vs EasyOCR - ArivElm — Technology Architecture & AI Advisory, truy cập vào tháng 5 11, 2026, https://arivelm.com/tesseract-vs-easyocr/
+19. The Best Tesseract OCR Alternatives in 2026 - Klippa, truy cập vào tháng 5 11, 2026, https://www.klippa.com/en/blog/information/the-best-alternative-to-tesseract/
+20. Comparing OCR Models for RAG: EasyOCR vs Tesseract for Real-World Documents | by Shruti Shreya | Medium, truy cập vào tháng 5 11, 2026, https://medium.com/@glow.goshreya/comparing-ocr-models-for-rag-easyocr-vs-tesseract-for-real-world-documents-cb3e19b783e7
+21. The-Best-Codes/best-highlight: best-highlight is a lightweight, efficient syntax highlighting library with zero runtime dependencies - GitHub, truy cập vào tháng 5 11, 2026, https://github.com/The-Best-Codes/best-highlight
+22. Codefile — Share collaborative code snippets online⚡️, truy cập vào tháng 5 11, 2026, https://codefile.io/
+23. Collaborative Notepad: Real-Time Notes for Everyone - GitHub, truy cập vào tháng 5 11, 2026, https://github.com/sh13y/collaborative-notepad
+24. 2025's Serverless Tech Stacks your Projects - DEV Community, truy cập vào tháng 5 11, 2026, https://dev.to/0x1da49/2025s-serverless-tech-stacks-your-projects-16k3
+25. 12 Tech Stacks for Software Development in 2025 - DarwinApps, truy cập vào tháng 5 11, 2026, https://www.darwinapps.com/blog/12-tech-stacks-for-software-development-in-2025/
+26. Zero Egress Costs: How I Built P2P File Sharing with Cloudflare - DEV Community, truy cập vào tháng 5 11, 2026, https://dev.to/kiyoe/zero-egress-costs-how-i-built-p2p-file-sharing-with-cloudflare-4lhc
+27. Hono v4 Guide: Fast APIs, RPC, JSX & Multi-Runtime Deploy | DeployHQ, truy cập vào tháng 5 11, 2026, https://www.deployhq.com/guides/hono
+28. The Modern Data Stack: Open-source edition - Datafold, truy cập vào tháng 5 11, 2026, https://www.datafold.com/blog/the-modern-data-stack-open-source-edition/
+29. Ultimate Guide to STUN, TURN, and ICE Servers in WebRTC - Ecosmob Technologies, truy cập vào tháng 5 11, 2026, https://www.ecosmob.com/blog/stun-turn-ice-servers-in-webrtc/
+30. Cloudflare Durable Objects - Hono, truy cập vào tháng 5 11, 2026, https://hono.dev/examples/cloudflare-durable-objects
+31. Great Firewall - Wikipedia, truy cập vào tháng 5 11, 2026, https://en.wikipedia.org/wiki/Great_Firewall
+32. The University Has a Firewall - Isn't That Enough? Why Users Still Need to Be Concerned About Computer Security - GIAC Certifications, truy cập vào tháng 5 11, 2026, https://www.giac.org/paper/gsec/1949/university-firewall-enough-users-concerned-about-computer-security/103390
+33. STUN and TURN Servers: The Hidden Engines of WebRTC Connectivity - Medium, truy cập vào tháng 5 11, 2026, https://medium.com/@justin.edgewoods/stun-and-turn-servers-the-hidden-engines-of-webrtc-connectivity-56966e639dd4
+34. Built a browser-based P2P file transfer because I was tired of upload limits - Reddit, truy cập vào tháng 5 11, 2026, https://www.reddit.com/r/SideProject/comments/1sqdo56/built_a_browserbased_p2p_file_transfer_because_i/
+35. PSA: Private IP addresses exposed by WebRTC changing to mDNS hostnames - Google Groups, truy cập vào tháng 5 11, 2026, https://groups.google.com/g/discuss-webrtc/c/6stQXi72BEU
+36. Ensure 'Manage exposure of local IP addresses by WebRTC' is set to 'Disabled' (CIS LEVEL 1) - Syxsense, truy cập vào tháng 5 11, 2026, https://www.syxsense.com/syxsense-securityarticles/cis_benchmarks/syx-1033-12834.html
+37. ExpressTURN - Free and Premium TURN Servers, truy cập vào tháng 5 11, 2026, https://www.expressturn.com/
+38. Best Xirsys TURN server Alternatives | by James bordane - Medium, truy cập vào tháng 5 11, 2026, https://medium.com/@jamesbordane57/best-xirsys-turn-server-alternatives-c98b50dff2d8
+39. Implementing our own STUN/TURN server for WebRTC Application - Google Groups, truy cập vào tháng 5 11, 2026, https://groups.google.com/g/discuss-webrtc/c/HQR-G_ZqkmA
+40. List of Free Stun and Turn Servers | Open Relay Project - DEV Community, truy cập vào tháng 5 11, 2026, https://dev.to/aprogrammer22/list-of-free-stun-and-turn-servers-open-relay-project-3a70
+41. Is Your File Sharing App Actually Safe? What You Need to Know in 2026 - DEV Community, truy cập vào tháng 5 11, 2026, https://dev.to/simpledrop/is-your-file-sharing-app-actually-safe-what-you-need-to-know-in-2026-388e
+42. 10 Secure File Sharing Options, Tips and Solutions - Varonis, truy cập vào tháng 5 11, 2026, https://www.varonis.com/blog/secure-file-sharing
+43. Is a fully anonymous, client-side encrypted file sharing service useful to anyone? - Reddit, truy cập vào tháng 5 11, 2026, https://www.reddit.com/r/cryptography/comments/1mcezmw/is_a_fully_anonymous_clientside_encrypted_file/
