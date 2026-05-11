@@ -503,7 +503,8 @@ export class WebRTCManager {
         if (receiveState === 'chunk-pending' && this.encryptionKey) {
           try {
             const decrypted = await decryptChunk(this.encryptionKey, event.data);
-            this.receivedChunks.push(decrypted);
+            // Copy to Uint8Array to prevent detached buffer issues on mobile WebKit
+            this.receivedChunks.push(new Uint8Array(decrypted));
             this.totalTransferred += decrypted.byteLength;
 
             if (this.receivedMeta) {
