@@ -157,7 +157,7 @@ export class WebRTCManager {
   private static readonly DC_CHUNK_SIZE = DEFAULT_CHUNK_SIZE;
 
   /** Received chunks buffer for file assembly */
-  private receivedChunks: ArrayBuffer[] = [];
+  private receivedChunks: BlobPart[] = [];
   private receivedMeta: FileMetadata | null = null;
 
   /** Speed calculation */
