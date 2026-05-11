@@ -21,18 +21,16 @@ export default function Home() {
   // Handle URL hash on mount (Receiver joining a room)
   React.useEffect(() => {
     const handleHash = async () => {
-      const hash = window.location.hash.substring(1); // remove '#'
-      
-      // Expected URL format: #room=roomId&key=keyHash
-      const params = new URLSearchParams(hash);
+      // Use URL parameters for room to avoid chat apps stripping the entire hash
+      const params = new URLSearchParams(window.location.search);
       const roomId = params.get('room');
-      const keyHash = params.get('key');
+      const keyHash = window.location.hash.substring(1); // remove '#'
       
       if (roomId && keyHash) {
         try {
           await webrtc.joinRoom(roomId, keyHash);
           toast.success(`Joining secure room: ${roomId}...`);
-          // Clear hash to avoid re-joining on refresh
+          // Clear URL to avoid re-joining on refresh
           window.history.replaceState(null, '', window.location.pathname);
         } catch (err) {
           toast.error("Failed to join room. Invalid link or key.");

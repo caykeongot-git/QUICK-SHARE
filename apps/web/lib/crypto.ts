@@ -177,13 +177,12 @@ export async function decryptText(
 // ─────────────────────────────────────────────────
 
 /**
- * Build a shareable URL with the room ID and encryption key embedded in the URI fragment.
+ * Build a shareable URL with the room ID in the query string and encryption key embedded in the URI fragment.
  *
- * Example output: https://quickshare.app/#room=abc123&key=SGVsbG8gV29ybGQ
+ * Example output: https://quickshare.app/?room=abc123#SGVsbG8gV29ybGQ
  *
  * The fragment (#...) is NEVER sent to the server per HTTP specification.
- * This ensures the server knows absolutely nothing about the room being joined
- * or the key being used.
+ * This ensures the server knows absolutely nothing about the key being used.
  *
  * @param baseUrl - Base URL of the application
  * @param roomId - Room identifier
@@ -196,19 +195,19 @@ export async function buildShareURL(
 ): Promise<string> {
   const keyString = await exportKeyToBase64URL(key);
   const cleanBase = baseUrl.replace(/\/+$/, '');
-  return `${cleanBase}/#room=${roomId}&key=${keyString}`;
+  return `${cleanBase}/?room=${roomId}#${keyString}`;
 }
 
 /**
  * Extract the encryption key from a URI fragment string.
- * Expects format: room=abc&key=def
  *
- * @param hashString - The key hash string
+ * @param hashString - The key hash string (e.g., #SGVsbG8...)
  * @returns CryptoKey ready for decryption
  * @throws Error if key is invalid
  */
 export async function extractKeyFromHash(hashString: string): Promise<CryptoKey> {
-  return importKeyFromBase64URL(hashString);
+  const cleanHash = hashString.startsWith('#') ? hashString.slice(1) : hashString;
+  return importKeyFromBase64URL(cleanHash);
 }
 
 // ─────────────────────────────────────────────────
