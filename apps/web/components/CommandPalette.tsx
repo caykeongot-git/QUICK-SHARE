@@ -11,7 +11,9 @@ import {
   Activity, 
   Trash2,
   File,
-  X
+  X,
+  Keyboard,
+  ArrowLeft
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useWebRTC } from '../lib/hooks/useWebRTC';
@@ -26,6 +28,11 @@ interface CommandPaletteProps {
 export function CommandPalette({ webrtc, onFileDrop }: CommandPaletteProps) {
   const [open, setOpen] = React.useState(true);
   const { setTheme, theme } = useTheme();
+  
+  // Manual Join State
+  const [mode, setMode] = React.useState<'default' | 'manual-join'>('default');
+  const [joinRoomId, setJoinRoomId] = React.useState('');
+  const [joinKey, setJoinKey] = React.useState('');
 
   // Handle global keyboard shortcuts
   React.useEffect(() => {
@@ -94,6 +101,21 @@ export function CommandPalette({ webrtc, onFileDrop }: CommandPaletteProps) {
     }
   };
 
+  const handleManualJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!joinRoomId.trim() || !joinKey.trim()) {
+      toast.error('Please enter both Room ID and Secret Key');
+      return;
+    }
+    try {
+      await webrtc.joinRoom(joinRoomId.trim(), joinKey.trim());
+      toast.success(`Joining secure room: ${joinRoomId}...`);
+      setMode('default');
+    } catch (err) {
+      toast.error("Failed to join room. Invalid details.");
+    }
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto glass-panel rounded-3xl overflow-hidden shadow-2xl relative">
       <Command 
@@ -101,14 +123,25 @@ export function CommandPalette({ webrtc, onFileDrop }: CommandPaletteProps) {
         shouldFilter={true}
       >
         <div className="flex items-center border-b border-border/50 px-4">
+          {mode === 'manual-join' ? (
+            <button 
+              onClick={() => setMode('default')}
+              className="mr-3 p-1.5 hover:bg-muted rounded-md transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+            </button>
+          ) : null}
           <Command.Input 
             autoFocus
             className="flex-1 bg-transparent py-5 text-lg outline-none placeholder:text-muted-foreground text-foreground" 
-            placeholder="Type a command or search..." 
+            placeholder={mode === 'manual-join' ? "Manual Connection Mode" : "Type a command or search..."} 
+            disabled={mode === 'manual-join'}
           />
-          <kbd className="hidden sm:inline-flex items-center gap-1 rounded border border-border bg-muted px-2 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>K
-          </kbd>
+          {mode === 'default' && (
+            <kbd className="hidden sm:inline-flex items-center gap-1 rounded border border-border bg-muted px-2 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          )}
         </div>
 
         {/* Dynamic Status Area */}
@@ -142,16 +175,28 @@ export function CommandPalette({ webrtc, onFileDrop }: CommandPaletteProps) {
           <Command.Group heading="Share & Connect" className="text-xs font-medium text-muted-foreground px-2 py-1">
             
             {webrtc.status === 'idle' && (
-              <Command.Item 
-                className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer aria-selected:bg-primary/20 aria-selected:text-foreground text-foreground/80 transition-colors"
-                onSelect={() => webrtc.createRoom()}
-              >
-                <Activity className="w-5 h-5" />
-                <div className="flex flex-col">
-                  <span className="font-medium">Create Secure Room</span>
-                  <span className="text-xs opacity-70">Start a new zero-trust P2P session</span>
-                </div>
-              </Command.Item>
+              <>
+                <Command.Item 
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer aria-selected:bg-primary/20 aria-selected:text-foreground text-foreground/80 transition-colors"
+                  onSelect={() => webrtc.createRoom()}
+                >
+                  <Activity className="w-5 h-5" />
+                  <div className="flex flex-col">
+                    <span className="font-medium">Create Secure Room</span>
+                    <span className="text-xs opacity-70">Start a new zero-trust P2P session</span>
+                  </div>
+                </Command.Item>
+                <Command.Item 
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer aria-selected:bg-primary/20 aria-selected:text-foreground text-foreground/80 transition-colors"
+                  onSelect={() => setMode('manual-join')}
+                >
+                  <Keyboard className="w-5 h-5" />
+                  <div className="flex flex-col">
+                    <span className="font-medium">Join Room Manually</span>
+                    <span className="text-xs opacity-70">Enter Room ID and Key to connect</span>
+                  </div>
+                </Command.Item>
+              </>
             )}
 
             {webrtc.status === 'connected' && (
@@ -240,8 +285,46 @@ export function CommandPalette({ webrtc, onFileDrop }: CommandPaletteProps) {
               </Command.Item>
             )}
           </Command.Group>
-
         </Command.List>
+
+        {/* Manual Join UI overlay */}
+        {mode === 'manual-join' && (
+          <div className="absolute top-[73px] left-0 right-0 bottom-0 bg-background z-10 flex flex-col p-6 animate-in fade-in slide-in-from-bottom-2">
+            <h3 className="text-lg font-semibold mb-4">Manual Connection</h3>
+            <form onSubmit={handleManualJoin} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Room ID</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={joinRoomId}
+                  onChange={(e) => setJoinRoomId(e.target.value)}
+                  className="bg-background border border-border/60 p-3 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 ring-primary/50"
+                  placeholder="e.g. -22EgFPy"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Secret Key</label>
+                <input 
+                  type="text" 
+                  value={joinKey}
+                  onChange={(e) => setJoinKey(e.target.value)}
+                  className="bg-background border border-border/60 p-3 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 ring-primary/50"
+                  placeholder="Paste the Base64 URL key here"
+                  required
+                />
+              </div>
+              <button 
+                type="submit"
+                className="mt-2 bg-primary text-primary-foreground font-medium p-3 rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
+              >
+                Connect Securely
+              </button>
+            </form>
+          </div>
+        )}
+
       </Command>
     </div>
   );

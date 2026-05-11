@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import { type TransferProgress } from '../lib/webrtc';
-import { FileUp, CheckCircle2, Copy } from 'lucide-react';
+import { FileUp, CheckCircle2, Copy, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface TransferStatusProps {
   progress: TransferProgress | null;
@@ -21,20 +22,67 @@ export function TransferStatus({ progress, status, shareUrl }: TransferStatusPro
   };
 
   if (status === 'waiting' && shareUrl) {
+    let roomId = '';
+    let keyString = '';
+    try {
+      const url = new URL(shareUrl);
+      roomId = url.searchParams.get('room') || '';
+      keyString = url.hash.substring(1);
+    } catch {}
+
     return (
-      <div className="w-full max-w-2xl mx-auto mt-6 glass-panel rounded-2xl p-6 text-center animate-in fade-in slide-in-from-bottom-4">
-        <h3 className="text-lg font-semibold mb-2">Room Created</h3>
-        <p className="text-muted-foreground mb-4">Share this link with the receiver. The encryption key is embedded securely in the URL.</p>
-        
-        <div className="flex items-center gap-2 bg-background/50 border border-border p-3 rounded-xl break-all text-sm font-mono">
-          <span className="flex-1 text-left opacity-80">{shareUrl}</span>
-          <button 
-            onClick={handleCopyLink}
-            className="p-2 hover:bg-primary/20 text-primary rounded-lg transition-colors flex-shrink-0"
-            title="Copy Link"
-          >
-            <Copy className="w-5 h-5" />
-          </button>
+      <div className="w-full max-w-2xl mx-auto mt-6 glass-panel rounded-3xl p-6 md:p-8 animate-in fade-in slide-in-from-bottom-4 shadow-xl border border-border/50">
+        <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+          
+          {/* QR Code Section */}
+          <div className="flex flex-col items-center gap-3 bg-white p-4 rounded-2xl shadow-sm">
+            <QRCodeSVG 
+              value={shareUrl} 
+              size={160} 
+              bgColor="#ffffff" 
+              fgColor="#000000" 
+              level="M" 
+              includeMargin={false}
+            />
+            <div className="flex items-center gap-2 text-xs font-medium text-black/60">
+              <Smartphone className="w-4 h-4" />
+              <span>Scan to join</span>
+            </div>
+          </div>
+
+          {/* Details Section */}
+          <div className="flex-1 flex flex-col w-full text-center md:text-left">
+            <h3 className="text-xl font-bold mb-2 text-foreground">Room Created</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Scan the QR code with your phone camera, or share the secure link below.
+            </p>
+            
+            <div className="flex flex-col gap-4">
+              {/* Share Link */}
+              <div className="flex items-center gap-2 bg-background/50 border border-border/60 p-2.5 rounded-xl text-sm font-mono focus-within:ring-2 ring-primary/50 transition-all">
+                <span className="flex-1 truncate opacity-80 px-2">{shareUrl}</span>
+                <button 
+                  onClick={handleCopyLink}
+                  className="p-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors flex-shrink-0 shadow-sm"
+                  title="Copy Link"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Manual Join Code */}
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="bg-background/40 border border-border/40 p-3 rounded-xl flex flex-col gap-1 text-center md:text-left">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Room ID</span>
+                  <span className="font-mono text-sm font-medium">{roomId}</span>
+                </div>
+                <div className="bg-background/40 border border-border/40 p-3 rounded-xl flex flex-col gap-1 text-center md:text-left overflow-hidden">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Secret Key</span>
+                  <span className="font-mono text-sm font-medium truncate" title={keyString}>{keyString}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

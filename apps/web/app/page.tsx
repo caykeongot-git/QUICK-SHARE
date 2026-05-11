@@ -76,15 +76,37 @@ export default function Home() {
     if (webrtc.receivedFile) {
       const { blob, metadata } = webrtc.receivedFile;
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = metadata.fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const isImage = metadata.fileType.startsWith('image/');
       
-      toast.success(`Received file: ${metadata.fileName}`);
+      toast(`Received File: ${metadata.fileName}`, {
+        description: (
+          <div className="flex flex-col gap-3 mt-2">
+            {isImage && (
+              <img 
+                src={url} 
+                alt="Preview" 
+                className="w-full max-h-[200px] object-contain rounded-md border border-border/50 bg-black/5" 
+              />
+            )}
+            <div className="text-xs text-muted-foreground flex justify-between">
+              <span>{metadata.fileType || 'Unknown format'}</span>
+              <span>{(metadata.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+            </div>
+            <a 
+              href={url} 
+              download={metadata.fileName}
+              className="bg-primary text-primary-foreground text-center text-sm font-medium py-2 rounded-lg hover:bg-primary/90 transition-colors block shadow-sm"
+              onClick={() => {
+                // Auto dismiss toast after download click
+                toast.dismiss();
+              }}
+            >
+              Download File
+            </a>
+          </div>
+        ),
+        duration: Number.POSITIVE_INFINITY, // Never auto-dismiss file downloads
+      });
     }
   }, [webrtc.receivedText, webrtc.receivedFile]);
 

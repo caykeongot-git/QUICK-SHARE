@@ -39,9 +39,6 @@ interface PeerInfo {
  * - Auto-cleans up after 30 minutes of inactivity via Alarm API.
  */
 export class RoomCoordinator extends DurableObject<Env> {
-  /** Active WebSocket connections mapped to peer metadata */
-  private peers: Map<WebSocket, PeerInfo> = new Map();
-
   /** Inactivity timeout duration in milliseconds (30 minutes) */
   private static readonly IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 
@@ -59,8 +56,10 @@ export class RoomCoordinator extends DurableObject<Env> {
       return new Response('Expected WebSocket upgrade', { status: 426 });
     }
 
+    const currentWebSockets = this.ctx.getWebSockets();
+
     // Enforce max 2 peers per room
-    if (this.peers.size >= 2) {
+    if (currentWebSockets.length >= 2) {
       const pair = new WebSocketPair();
       const client = pair[0];
       const server = pair[1];
@@ -84,15 +83,15 @@ export class RoomCoordinator extends DurableObject<Env> {
     // Accept the server-side WebSocket via Hibernation API
     this.ctx.acceptWebSocket(server);
 
-    const peerInfo: PeerInfo = { joinedAt: Date.now() };
-    this.peers.set(server, peerInfo);
-
     // Notify the new peer about room state
+    // Note: getWebSockets() now includes the newly accepted socket, so length is +1
+    const newCount = this.ctx.getWebSockets().length;
+    
     const roomInfoMsg: SignalMessage = {
       type: 'room-info',
       payload: {
-        peerCount: this.peers.size,
-        message: this.peers.size === 1
+        peerCount: newCount,
+        message: newCount === 1
           ? 'Waiting for peer to join...'
           : 'Peer is already in the room. Ready to connect.',
       },
@@ -101,7 +100,7 @@ export class RoomCoordinator extends DurableObject<Env> {
     server.send(JSON.stringify(roomInfoMsg));
 
     // Notify existing peer that a new peer joined
-    if (this.peers.size === 2) {
+    if (newCount === 2) {
       this.broadcast(server, {
         type: 'peer-joined',
         payload: { peerCount: 2 },
@@ -166,17 +165,17 @@ export class RoomCoordinator extends DurableObject<Env> {
    * Hibernation API: called when a WebSocket is closed.
    */
   async webSocketClose(ws: WebSocket, code: number, _reason: string, _wasClean: boolean): Promise<void> {
-    this.peers.delete(ws);
+    const currentCount = this.ctx.getWebSockets().length;
 
     // Notify remaining peer
     this.broadcast(ws, {
       type: 'peer-left',
-      payload: { peerCount: this.peers.size, code },
+      payload: { peerCount: currentCount, code },
       ts: new Date().toISOString(),
     });
 
     // If room is empty, schedule cleanup
-    if (this.peers.size === 0) {
+    if (currentCount === 0) {
       await this.ctx.storage.setAlarm(Date.now() + 5000); // Clean up in 5s
     }
   }
@@ -186,11 +185,12 @@ export class RoomCoordinator extends DurableObject<Env> {
    */
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
     console.error('WebSocket error:', error);
-    this.peers.delete(ws);
+    
+    const currentCount = this.ctx.getWebSockets().length;
 
     this.broadcast(ws, {
       type: 'peer-left',
-      payload: { peerCount: this.peers.size, error: 'Peer connection error' },
+      payload: { peerCount: currentCount, error: 'Peer connection error' },
       ts: new Date().toISOString(),
     });
   }
@@ -200,14 +200,13 @@ export class RoomCoordinator extends DurableObject<Env> {
    */
   async alarm(): Promise<void> {
     // Close all remaining connections
-    for (const [ws] of this.peers) {
+    for (const ws of this.ctx.getWebSockets()) {
       try {
         ws.close(4000, 'Room closed due to inactivity');
       } catch {
         // WebSocket may already be closed
       }
     }
-    this.peers.clear();
 
     // Delete all stored state
     await this.ctx.storage.deleteAll();
@@ -223,13 +222,12 @@ export class RoomCoordinator extends DurableObject<Env> {
   private broadcast(sender: WebSocket, message: SignalMessage): void {
     const data = JSON.stringify(message);
 
-    for (const [ws] of this.peers) {
+    for (const ws of this.ctx.getWebSockets()) {
       if (ws !== sender) {
         try {
           ws.send(data);
         } catch {
           // Peer may have disconnected
-          this.peers.delete(ws);
         }
       }
     }
